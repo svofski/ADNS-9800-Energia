@@ -30,47 +30,40 @@ int16_t abs_x = 0, abs_y = 0;
 void setup() {
     Serial.begin(9600);
     
-    pinMode (ADNS_CS, OUTPUT);
+    pinMode(ADNS_CS, OUTPUT);
     
     SPI.begin();
     SPI.setDataMode(SPI_MODE3);
     SPI.setBitOrder(MSBFIRST);
     SPI.setClockDivider(8);
   
+    Serial.println("\033[2J\033[HADNS-9800");
+  
     if (performStartup() != 0) {
         Serial.println("Abort");
         for(;;);
     }
 
-    delay(1500);
+    delay(2000);
     Serial.print("\033[2J\033[H");
 }
 
 void loop() {
-    currTime = millis();
-    
-    if (currTime > timer) {    
-        timer = currTime + 2000;
-    }
+    if (UpdatePointer()) {
+        Serial.print("  \033[HRel: ");
+        printi(rel_x, 4);
+        Serial.print(", ");
+        printi(rel_y, 4);
+                    
+        Serial.print(" SQUAL="); printi(squal, 4);
+        Serial.print(" FrameRate="); printi(frameRate, 5);
+        Serial.print(" @["); printi(abs_x, 5); Serial.print(","); printi(abs_y, 5); Serial.print("]");
         
-    if (currTime > pollTimer) {
-        if (UpdatePointer()) {
-            Serial.print("  \033[HRel: ");
-            printi(rel_x, 4);
-            Serial.print(", ");
-            printi(rel_y, 4);
-                        
-            Serial.print(" SQUAL="); printi(squal, 4);
-            Serial.print(" FrameRate="); printi(frameRate, 5);
-            Serial.print(" @["); printi(abs_x, 5); Serial.print(","); printi(abs_y, 5); Serial.print("]");
-            
-            Serial.print("\033["); Serial.print(lasty); Serial.print(";"); Serial.print(lastx); Serial.print("H  ");
-            lasty = TERM_ROWS/2 + abs_y / 400;
-            lastx = TERM_COLS/2 + abs_x / 100;
-            Serial.print("\033["); Serial.print(lasty); Serial.print(";"); Serial.print(lastx); Serial.print("H:)");
-        }
-        pollTimer = currTime + 10;
-    }    
+        Serial.print("\033["); Serial.print(lasty); Serial.print(";"); Serial.print(lastx); Serial.print("H  ");
+        lasty = TERM_ROWS/2 + abs_y / 400;
+        lastx = TERM_COLS/2 + abs_x / 100;
+        Serial.print("\033["); Serial.print(lasty); Serial.print(";"); Serial.print(lastx); Serial.print("H:)");
+    }
 }
 
 // Configure sensor parameters. Try to squeeze as much as we can from this sensor.
@@ -139,7 +132,7 @@ int UpdatePointer(void)
     uint8_t motion, dx_l, dx_h, dy_h, dy_l;
     adns_com(
       SPI.transfer(REG_Motion_Burst);
-      delayMicroseconds(500);
+      delayMicroseconds(200);
       do {
           motion = SPI.transfer(0);
           if (motion & 0x80 == 0)
@@ -149,7 +142,7 @@ int UpdatePointer(void)
           dx_h   = SPI.transfer(0);
           dy_l   = SPI.transfer(0);
           dy_h   = SPI.transfer(0);
-          squal  = SPI.transfer(0);
+          squal  = SPI.transfer(0) << 2;
           /* Pixel_Sum */     SPI.transfer(0);
           /* Maximum_Pixel */ SPI.transfer(0);
           /* Minimum_Pixel */ SPI.transfer(0);
@@ -164,7 +157,7 @@ int UpdatePointer(void)
     
     abs_x += rel_x;
     abs_y += rel_y;
-
+    
     return motion & 0x80;    
 }
 
