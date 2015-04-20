@@ -13,6 +13,10 @@ and should be easy to adjust.
 
 There's also a terminal-based mousing toy included which may be useful for evaluation of sensor's capabilities. 
 To use it you need a real terminal emulator that
-supports VT102/ANSI escape sequences. Large window size is preferrable.
+supports VT102/ANSI escape sequences. Large window size is preferrable. I use screen, e.g.
+```
+screen /dev/tty.uart-CCFF42A21E961A20
+```
+To quit screen in terminal mode press Ctrl+A Ctrl+\
 
 ADNS-9800 Firmware bytecode is Copyright Avago Technologies.
