@@ -11,14 +11,6 @@
 // this pin connects to SS on ADNS-9800 sensor
 #define ADNS_CS SS
 
-// terminal dimensions for the terminal toy
-#define TERM_ROWS 63
-#define TERM_COLS 238
-
-unsigned long currTime;
-unsigned long timer;
-unsigned long pollTimer;
-
 uint16_t frameRate;
 uint16_t squal;
 int lastx = 0, lasty = 0;
@@ -30,14 +22,16 @@ int16_t abs_x = 0, abs_y = 0;
 void setup() {
     Serial.begin(9600);
     
+    TermGetCaps();
+
     pinMode(ADNS_CS, OUTPUT);
     
     SPI.begin();
     SPI.setDataMode(SPI_MODE3);
     SPI.setBitOrder(MSBFIRST);
     SPI.setClockDivider(8);
-  
-    Serial.println("\033[2J\033[HADNS-9800");
+
+    Serial.println("ADNS-9800");
   
     if (performStartup() != 0) {
         Serial.println("Abort");
@@ -45,12 +39,15 @@ void setup() {
     }
 
     delay(2000);
-    Serial.print("\033[2J\033[H");
+    TermClear();
 }
 
 void loop() {
+    extern uint16_t term_rows, term_columns;
+    
     if (UpdatePointer()) {
-        Serial.print("  \033[HRel: ");
+        TermHome();
+        Serial.print("Rel: ");
         printi(rel_x, 4);
         Serial.print(", ");
         printi(rel_y, 4);
@@ -59,10 +56,16 @@ void loop() {
         Serial.print(" FrameRate="); printi(frameRate, 5);
         Serial.print(" @["); printi(abs_x, 5); Serial.print(","); printi(abs_y, 5); Serial.print("]");
         
-        Serial.print("\033["); Serial.print(lasty); Serial.print(";"); Serial.print(lastx); Serial.print("H  ");
-        lasty = TERM_ROWS/2 + abs_y / 400;
-        lastx = TERM_COLS/2 + abs_x / 100;
-        Serial.print("\033["); Serial.print(lasty); Serial.print(";"); Serial.print(lastx); Serial.print("H:)");
+        if (TermCanPositionCursor()) {
+            TermGoto(lasty, lastx);
+            Serial.print("  ");
+            lasty = term_rows/2 + abs_y / 400;
+            lastx = term_columns/2 + abs_x / 100;
+            TermGoto(lasty, lastx);
+            Serial.print(":)");
+        } else {
+            Serial.println();
+        }
     }
 }
 
